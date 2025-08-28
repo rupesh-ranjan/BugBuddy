@@ -1,0 +1,21 @@
+{
+    "name": "bugbuddy-backend",
+    "version": "1.0.0",
+    "description": "Backend for BugBuddy",
+    "keywords": [
+        "nodejs",
+        "javascript",
+        "backend"
+    ],
+    "license": "ISC",
+    "author": "Rupesh Ranjan",
+    "type": "module",
+    "main": "index.js",
+    "scripts": {
+        "start": "node src/app.js",
+        "dev": "nodemon src/app.js"
+    },
+    "dependencies": {
+        "express": "^5.1.0"
+    }
+}
