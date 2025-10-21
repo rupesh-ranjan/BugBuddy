@@ -1,71 +1,172 @@
 import express from "express";
-import { adminAuth, userAuth } from "./middlewares/auth.js";
+import connectDB from "./config/database.js";
+import User from "./models/user.js";
+import { validateUserData } from "./utils/validation.js";
+import cookieParser from "cookie-parser";
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
 
 console.log("Starting a new project BugBuddy with Node.js");
 const app = express();
 
-app.use("/admin", adminAuth);
-app.get("/admin/getAllData", (req, res) => {
-    res.send("Here is all data");
+app.use(express.json());
+app.use(cookieParser());
+
+app.post("/signup", async (req, res) => {
+    try {
+        console.log("Cookies: ", req.cookies);
+        const errors = await validateUserData(req.body);
+        console.log("Errors:", errors);
+        if (errors.length > 0) {
+            return res.status(400).send({ errors });
+        }
+
+        // Destructure user data from request body
+        // To protect so that only these fields are taken from req.body
+        const {
+            firstName,
+            lastName,
+            emailId,
+            password,
+            age,
+            gender,
+            photoUrl,
+            about,
+            skills,
+        } = req.body;
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const newUser = {
+            firstName,
+            lastName,
+            emailId,
+            password: hashedPassword,
+            age,
+            gender,
+            photoUrl,
+            about,
+            skills,
+        };
+        const user = new User(newUser);
+        await user.save();
+        res.send("Signed up successfully");
+    } catch (error) {
+        if (error.name === "ValidationError") {
+            const messages = Object.values(error.errors).map(
+                (err) => err.message
+            );
+            return res.status(400).send({ errors: messages });
+        } else if (error.code === 11000) {
+            return res.status(400).send({ error: "Email already exists" });
+        } else {
+            console.error("Error signing up user:", error);
+            res.status(500).send("Something went wrong");
+        }
+    }
 });
-app.delete("/admin/deleteAllData", (req, res) => {
-    res.send("All data deleted");
+
+app.post("/login", async (req, res) => {
+    try {
+        const { emailId, password } = req.body;
+        const user = await User.findOne({ emailId });
+
+        if (!user || user.length === 0)
+            return res.status(404).send("Invalid Credentials");
+        const isValidUser = await bcrypt.compare(password, user.password);
+        if (!isValidUser) return res.status(404).send("Invalid Credentials");
+
+        const token = jwt.sign({ _id: user._id }, "mysecretkey");
+        res.cookie("token", token);
+        res.send("Logged in successfully");
+    } catch {
+        res.status(400).send("Something went wrong");
+    }
 });
 
-app.use("/user", userAuth);
-app.get("/user", (_, res) => {
-    res.send("Here is you data");
+app.get("/profile", async (req, res) => {
+    try {
+        const { token } = req.cookies;
+        if (!token) throw new Error("Invalid Token");
+        const { _id } = jwt.verify(token, "mysecretkey");
+        const user = await User.findById(_id);
+        res.send(user);
+    } catch (err) {
+        res.status(400).send("Something went wrong " + err.message);
+    }
 });
-app.get("/user/login", (_, res) => {
-    res.send("Welocme user! login successful");
+
+app.get("/users", async (req, res) => {
+    try {
+        const users = await User.find({ firstName: req.body.firstName });
+        if (!users) res.status(404).send("No user find");
+        res.send(users);
+    } catch {
+        res.status(400).send("Something went wrong");
+    }
 });
 
-// // Will override below two,
-// // app.use("/", (req, res) => {
-// //     res.send("Hello from / server");
-// // });
-
-// // Match all HTTP method API calls
-// // app.use("/test", (req, res) => {
-// //     res.send("Hello from test server");
-// // });
-
-// // Match to only GET call
-// app.get(/ab+c/, (req, res) => {
-//     res.send({ username: "Rupesh Ranjan", phone: "9110145120" });
-// });
-// // Match to /test and /tet
-// app.get("/test", (req, res) => {
-//     console.log(req.query);
-//     res.send({ username: "Rupesh Ranjan", phone: "9110145120" });
-// });
-// app.get("/test/:userId/:password", (req, res) => {
-//     console.log(req.params);
-//     res.send({ username: "Rupesh Ranjan", phone: "9110145120" });
-// });
-// // Match to only POST call
-// app.post("/test", (req, res) => {
-//     res.send("Data saved successfully");
-// });
-// // Match to only DELETE call
-// app.delete("/test", (req, res) => {
-//     res.send("Data deleted successfully");
-// });
-
-// app.use(
-//     "/user",
-//     (req, res, next) => {
-//         console.log("Middleware 1");
-//         next();
-//         console.log("First middleware");
-//         //res.send("Handling user API - 1");
-//     },
-//     (req, res, next) => {
-//         console.log("Middleware 2");
-//         res.send("Handling user API - 2");
-//     }
-// );
-
-app.listen(3000, () => {
-    console.log("Server is running on http://localhost:3000");
+app.get("/userById", async (req, res) => {
+    try {
+        const user = await User.findById(req.body._id);
+        if (!user) res.status(404).send("No user find");
+        res.send(user);
+    } catch {
+        res.status(400).send("Something went wrong");
+    }
 });
+
+app.delete("/user", async (req, res) => {
+    const id = req.body._id;
+    try {
+        const user = await User.findByIdAndDelete(id);
+        if (!user) res.status(404).send("No user find");
+        res.send("Deleted user successfully");
+    } catch {
+        res.status(400).send("Something went wrong");
+    }
+});
+
+app.patch("/user", async (req, res) => {
+    const id = req.body._id;
+    const data = req.body;
+    try {
+        const user = await User.findByIdAndUpdate(id, data);
+        if (!user) res.status(404).send("No user find");
+        res.send("Updated user successfully");
+    } catch {
+        res.status(400).send("Something went wrong");
+    }
+});
+
+app.patch("/userByEmailId", async (req, res) => {
+    const emailId = req.body.emailId;
+    const data = req.body;
+    try {
+        const user = await User.findOneAndUpdate({ emailId }, data);
+        if (!user) res.status(404).send("No user find");
+        res.send("Updated user successfully");
+    } catch {
+        res.status(400).send("Something went wrong");
+    }
+});
+
+app.get("/feed", async (req, res) => {
+    try {
+        const users = await User.find({});
+        if (!users) res.status(404).send("No user find");
+        res.send(users);
+    } catch {
+        res.status(400).send("Something went wrong");
+    }
+});
+
+connectDB()
+    .then(() => {
+        console.log("Database connected successfully");
+        app.listen(3000, () => {
+            console.log("Server is running on http://localhost:3000");
+        });
+    })
+    .catch((err) => {
+        console.log("Error connecting to database", err);
+    });
