@@ -4,7 +4,7 @@ import User from "./models/user.js";
 import { validateUserData } from "./utils/validation.js";
 import cookieParser from "cookie-parser";
 import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
+import { userAuth } from "./middlewares/auth.js";
 
 console.log("Starting a new project BugBuddy with Node.js");
 const app = express();
@@ -72,10 +72,9 @@ app.post("/login", async (req, res) => {
 
         if (!user || user.length === 0)
             return res.status(404).send("Invalid Credentials");
-        const isValidUser = await bcrypt.compare(password, user.password);
+        const isValidUser = await user.validatePassword(password);
         if (!isValidUser) return res.status(404).send("Invalid Credentials");
-
-        const token = jwt.sign({ _id: user._id }, "mysecretkey");
+        const token = user.getJWT();
         res.cookie("token", token);
         res.send("Logged in successfully");
     } catch {
@@ -83,16 +82,19 @@ app.post("/login", async (req, res) => {
     }
 });
 
-app.get("/profile", async (req, res) => {
+app.get("/profile", userAuth, async (req, res) => {
     try {
-        const { token } = req.cookies;
-        if (!token) throw new Error("Invalid Token");
-        const { _id } = jwt.verify(token, "mysecretkey");
-        const user = await User.findById(_id);
+        const user = req.user;
         res.send(user);
     } catch (err) {
         res.status(400).send("Something went wrong " + err.message);
     }
+});
+
+app.post("/sendConnectionRequest", userAuth, (req, res) => {
+    const user = req.user;
+
+    res.send(user.firstName + " Connection request send");
 });
 
 app.get("/users", async (req, res) => {
