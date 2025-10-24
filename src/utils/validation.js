@@ -76,7 +76,7 @@ async function validateUserData(user) {
     }
 
     // About
-    if (about && typeof about !== "string") {
+    if (about && typeof about !== "string" && about.length < 1000) {
         errors.push("About must be a string.");
     }
 
