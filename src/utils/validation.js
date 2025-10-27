@@ -1,7 +1,6 @@
 import validator from "validator";
 import User from "../models/user.js";
 
-// --- Helper functions ---
 function isNonEmptyString(value) {
     return typeof value === "string" && value.trim() !== "";
 }
@@ -88,8 +87,8 @@ async function validateUserSingUpData(user) {
     return errors;
 }
 
-// --- EditUser Data validation ---
-async function validateUserEditData(user) {
+// --- UpdateUser Data validation ---
+async function validateUserUpdateData(user) {
     const errors = [];
 
     const { firstName, lastName, age, gender, photoUrl, about, skills } = user;
@@ -102,11 +101,11 @@ async function validateUserEditData(user) {
         errors.push("Last name must be a non-empty string.");
     }
 
-    if (typeof age !== "number" || age < 14) {
+    if ((age && typeof age !== "number") || age < 14) {
         errors.push("Age must be a number and at least 14.");
     }
 
-    if (!isValidGender(gender)) {
+    if (gender && !isValidGender(gender)) {
         errors.push("Gender must be male, female, or other.");
     }
 
@@ -125,4 +124,4 @@ async function validateUserEditData(user) {
     return errors;
 }
 
-export { validateUserSingUpData, validateUserEditData };
+export { validateUserSingUpData, validateUserUpdateData };

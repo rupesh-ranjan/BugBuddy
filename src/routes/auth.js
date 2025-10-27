@@ -1,13 +1,13 @@
 import express from "express";
 import bcrypt from "bcrypt";
-import { validateUserData } from "../utils/validation.js";
+import { validateUserSingUpData } from "../utils/validation.js";
 import User from "../models/user.js";
 
 const router = express.Router();
 
 router.post("/signup", async (req, res) => {
     try {
-        const errors = await validateUserData(req.body);
+        const errors = await validateUserSingUpData(req.body);
         if (errors.length > 0) {
             return res.status(400).send({ errors });
         }
@@ -59,9 +59,7 @@ router.post("/login", async (req, res) => {
     try {
         const { emailId, password } = req.body;
         const user = await User.findOne({ emailId });
-
-        if (!user || user.length === 0)
-            return res.status(404).send("Invalid Credentials");
+        if (!user) return res.status(404).send("Invalid Credentials");
         const isValidUser = await user.validatePassword(password);
         if (!isValidUser) return res.status(404).send("Invalid Credentials");
         const token = user.getJWT();
