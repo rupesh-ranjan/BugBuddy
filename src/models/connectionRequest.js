@@ -2,8 +2,12 @@ import { Schema, model } from "mongoose";
 
 const schema = new Schema(
     {
-        fromUserId: { type: Schema.Types.ObjectId, required: true },
-        toUserId: { type: Schema.Types.ObjectId, required: true },
+        fromUserId: {
+            type: Schema.Types.ObjectId,
+            ref: "User",
+            required: true,
+        },
+        toUserId: { type: Schema.Types.ObjectId, ref: "User", required: true },
         status: {
             type: String,
             required: true,

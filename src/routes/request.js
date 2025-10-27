@@ -61,7 +61,7 @@ router.patch(
             });
             // If invalid requestId
             if (!request) {
-                throw new Error("No request found");
+                return res.status(200).json({ message: "No request found" });
             }
 
             request.status = status;

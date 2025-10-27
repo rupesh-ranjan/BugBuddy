@@ -24,8 +24,8 @@
 
 ## UserRouter
 
--   GET /connections
--   GET /requests/received
--   GET /feed -fetch the profile of other users on platform
+-   GET /user/requests/received
+-   GET /user/connections
+-   GET /user/feed -fetch the profile of other users on platform
 
 Status: ignored, insterested, accepted, rejected
