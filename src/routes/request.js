@@ -42,17 +42,39 @@ router.post("/request/send/:status/:toUserId", userAuth, async (req, res) => {
     }
 });
 
-router.post(
+router.patch(
     "/request/review/:status/:requestId",
     userAuth,
     async (req, res) => {
-        // "accepted", "rejected"
+        try {
+            // validate status
+            const allowedStatus = ["accepted", "rejected"];
+            const { status, requestId } = req.params;
+            if (!allowedStatus.includes(status))
+                throw new Error("Invalid status type");
 
-        const user = req.user;
-        console.log(user);
-        const request = await ConnectionRequest.findById(req.params.requestId);
-        console.log(request);
-        res.json({ message: `${req.user.firstName} Hi` });
+            const { _id: userId, firstName: userFirstName } = req.user;
+            const request = await ConnectionRequest.findOne({
+                _id: requestId,
+                toUserId: userId,
+                status: "interested",
+            });
+            // If invalid requestId
+            if (!request) {
+                throw new Error("No request found");
+            }
+
+            request.status = status;
+            const fromUserFirstName = (await User.findById(request.fromUserId))
+                .firstName;
+            const data = await request.save();
+            res.json({
+                message: `${userFirstName} ${status} the request from ${fromUserFirstName}`,
+                data,
+            });
+        } catch (error) {
+            res.status(400).json({ message: "ERROR: " + error.message });
+        }
     }
 );
 

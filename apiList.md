@@ -15,11 +15,12 @@
 ## ConnectionRequestRouter
 
 -   POST /request/send/:status/:toUserId
--   POST /request/send/interested/:toUserId
--   POST /request/send/rejected/:toUserId
+<!-- -   POST /request/send/interested/:toUserId
+-   POST /request/send/rejected/:toUserId -->
 
--   POST /review/send/interested/:toUserId
--   POST /review/send/rejected/:toUserId
+-   POST /review/send/:status/:toUserId
+<!-- -   POST /review/send/interested/:toUserId
+-   POST /review/send/rejected/:toUserId -->
 
 ## UserRouter
 
