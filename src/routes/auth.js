@@ -64,7 +64,14 @@ router.post("/login", async (req, res) => {
         if (!isValidUser) return res.status(404).send("Invalid Credentials");
         const token = user.getJWT();
         res.cookie("token", token);
-        res.send("Logged in successfully");
+
+        const safeUser = user.toObject();
+        delete safeUser.password;
+
+        res.status(200).json({
+            message: "Logged in successfully",
+            user: safeUser,
+        });
     } catch {
         res.status(400).send("Something went wrong");
     }
