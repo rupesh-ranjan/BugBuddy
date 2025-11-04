@@ -82,8 +82,6 @@ router.patch("/profile/forgotPassword", async (req, res) => {
         const { emailId, firstName, age, gender, newPassword } = req.body;
         const user = await User.findOne({ emailId });
         if (!user) return res.status(404).send("User not found");
-        console.log(firstName, user.firstName);
-        console.log(firstName !== user.firstName);
         if (
             user.firstName !== firstName ||
             user.age !== age ||
